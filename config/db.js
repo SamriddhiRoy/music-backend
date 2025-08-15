@@ -1,25 +1,15 @@
 const mongoose = require('mongoose');
+const config = require('./config');
 
 const connectDB = async () => {
   try {
     console.log('🔄 Attempting to connect to MongoDB...');
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nainaa5674:FuQMtPwl8QeBc2A9@cluster0.8wyof6k.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+    const MONGODB_URI = config.database.uri;
     
     console.log('🔄 MongoDB URI:', MONGODB_URI);
     
-    // Add connection options with timeouts
-    const options = {
-      serverSelectionTimeoutMS: 30000, // 30 seconds
-      socketTimeoutMS: 45000, // 45 seconds
-      connectTimeoutMS: 30000, // 30 seconds
-      maxPoolSize: 10,
-      minPoolSize: 1,
-      maxIdleTimeMS: 30000,
-      retryWrites: true,
-      w: 'majority'
-    };
-    
-    await mongoose.connect(MONGODB_URI, options);
+    // Use connection options from config
+    await mongoose.connect(MONGODB_URI, config.database.options);
     console.log('✅ MongoDB Connected Successfully');
     return true;
   } catch (error) {

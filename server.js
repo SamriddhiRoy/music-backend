@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const config = require('./config/config');
 const connectDB = require('./config/db');
 const { createDefaultAdmin, login } = require('./controllers/authController');
 const authRoutes = require('./routes/authRoutes');
@@ -14,58 +15,65 @@ const testimonialRoutes = require('./routes/testimonialRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.server.port;
 
 // Middleware
-app.use(cors());
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+app.use(cors(config.api.cors));
+app.use(express.json({ limit: config.upload.maxSize }));
+app.use(express.urlencoded({ extended: true, limit: config.upload.maxSize }));
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, config.upload.uploadPath)));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use(config.getApiUrl('/auth'), authRoutes);
 
 // Direct login route for frontend compatibility
-app.post('/api/login', login);
+app.post(config.getApiUrl('/login'), login);
 
 // All other API routes
-app.use('/api/about-us', aboutUsRoutes);
-app.use('/api/banners', bannerRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/specialities', specialityRoutes);
-app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/contact', contactRoutes);
+app.use(config.getApiUrl('/about-us'), aboutUsRoutes);
+app.use(config.getApiUrl('/banners'), bannerRoutes);
+app.use(config.getApiUrl('/services'), serviceRoutes);
+app.use(config.getApiUrl('/specialities'), specialityRoutes);
+app.use(config.getApiUrl('/testimonials'), testimonialRoutes);
+app.use(config.getApiUrl('/contact'), contactRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get(config.getApiUrl('/health'), (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Server is running!',
     timestamp: new Date().toISOString(),
+    baseUrl: config.api.baseUrl,
     endpoints: [
-      '/api/auth/login',
-      '/api/login',
-      '/api/about-us',
-      '/api/banners',
-      '/api/services',
-      '/api/specialities',
-      '/api/testimonials',
-      '/api/contact'
+      config.getApiUrl('/auth/login'),
+      config.getApiUrl('/login'),
+      config.getApiUrl('/about-us'),
+      config.getApiUrl('/banners'),
+      config.getApiUrl('/services'),
+      config.getApiUrl('/specialities'),
+      config.getApiUrl('/testimonials'),
+      config.getApiUrl('/contact')
     ]
   });
 });
 
 // Test protected route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working perfectly!' });
+app.get(config.getApiUrl('/test'), (req, res) => {
+  res.json({ 
+    message: 'Backend is working perfectly!',
+    apiUrl: config.api.baseUrl,
+    environment: config.server.nodeEnv
+  });
 });
 
 // Start server
 const startServer = async () => {
   try {
     console.log('🔄 Starting server...');
+    console.log(`🌍 Environment: ${config.server.nodeEnv}`);
+    console.log(`🔗 API Base URL: ${config.api.baseUrl}`);
     
     // Connect to database with retry logic
     console.log('🔄 Connecting to MongoDB...');
@@ -114,23 +122,24 @@ const startServer = async () => {
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🌐 Live at: ${config.api.baseUrl}`);
       console.log('✅ Backend is ready with all endpoints!');
       if (!isConnected) {
         console.log('⚠️ Database features will not work until MongoDB is connected');
         console.log('📝 Fix: Add 0.0.0.0/0 to MongoDB Atlas Network Access');
       }
       console.log('📋 Available endpoints:');
-      console.log('   - /api/health (health check)');
-      console.log('   - /api/test (test endpoint)');
+      console.log(`   - ${config.getFullUrl('/health')} (health check)`);
+      console.log(`   - ${config.getFullUrl('/test')} (test endpoint)`);
       if (isConnected) {
-        console.log('   - /api/login (direct login)');
-        console.log('   - /api/auth/login (auth login)');
-        console.log('   - /api/about-us');
-        console.log('   - /api/banners');
-        console.log('   - /api/services');
-        console.log('   - /api/specialities');
-        console.log('   - /api/testimonials');
-        console.log('   - /api/contact');
+        console.log(`   - ${config.getFullUrl('/login')} (direct login)`);
+        console.log(`   - ${config.getFullUrl('/auth/login')} (auth login)`);
+        console.log(`   - ${config.getFullUrl('/about-us')}`);
+        console.log(`   - ${config.getFullUrl('/banners')}`);
+        console.log(`   - ${config.getFullUrl('/services')}`);
+        console.log(`   - ${config.getFullUrl('/specialities')}`);
+        console.log(`   - ${config.getFullUrl('/testimonials')}`);
+        console.log(`   - ${config.getFullUrl('/contact')}`);
       }
     });
 
