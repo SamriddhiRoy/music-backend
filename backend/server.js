@@ -97,6 +97,7 @@ const startServer = async () => {
     if (!isConnected) {
       console.log('❌ Failed to connect to database after all retries');
       console.log('⚠️ Starting server without database connection...');
+      console.log('📝 To fix: Whitelist IP addresses in MongoDB Atlas Network Access');
       // Continue without database for now
     }
 
@@ -114,15 +115,23 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log('✅ Backend is ready with all endpoints!');
+      if (!isConnected) {
+        console.log('⚠️ Database features will not work until MongoDB is connected');
+        console.log('📝 Fix: Add 0.0.0.0/0 to MongoDB Atlas Network Access');
+      }
       console.log('📋 Available endpoints:');
-      console.log('   - /api/login (direct login)');
-      console.log('   - /api/auth/login (auth login)');
-      console.log('   - /api/about-us');
-      console.log('   - /api/banners');
-      console.log('   - /api/services');
-      console.log('   - /api/specialities');
-      console.log('   - /api/testimonials');
-      console.log('   - /api/contact');
+      console.log('   - /api/health (health check)');
+      console.log('   - /api/test (test endpoint)');
+      if (isConnected) {
+        console.log('   - /api/login (direct login)');
+        console.log('   - /api/auth/login (auth login)');
+        console.log('   - /api/about-us');
+        console.log('   - /api/banners');
+        console.log('   - /api/services');
+        console.log('   - /api/specialities');
+        console.log('   - /api/testimonials');
+        console.log('   - /api/contact');
+      }
     });
 
   } catch (error) {
