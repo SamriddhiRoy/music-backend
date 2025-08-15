@@ -67,17 +67,48 @@ const startServer = async () => {
   try {
     console.log('🔄 Starting server...');
     
-    // Connect to database
+    // Connect to database with retry logic
     console.log('🔄 Connecting to MongoDB...');
-    const isConnected = await connectDB();
+    let isConnected = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (!isConnected && retryCount < maxRetries) {
+      try {
+        isConnected = await connectDB();
+        if (!isConnected) {
+          retryCount++;
+          console.log(`❌ Failed to connect to database. Retry ${retryCount}/${maxRetries}`);
+          if (retryCount < maxRetries) {
+            console.log('🔄 Waiting 5 seconds before retry...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        }
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ Connection attempt ${retryCount} failed:`, error.message);
+        if (retryCount < maxRetries) {
+          console.log('🔄 Waiting 5 seconds before retry...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+    }
+    
     if (!isConnected) {
-      console.log('❌ Failed to connect to database');
-      process.exit(1);
+      console.log('❌ Failed to connect to database after all retries');
+      console.log('⚠️ Starting server without database connection...');
+      // Continue without database for now
     }
 
-    // Create default admin user
-    console.log('🔄 Creating default admin user...');
-    await createDefaultAdmin();
+    // Create default admin user (only if connected)
+    if (isConnected) {
+      console.log('🔄 Creating default admin user...');
+      try {
+        await createDefaultAdmin();
+      } catch (error) {
+        console.error('⚠️ Failed to create default admin user:', error.message);
+      }
+    }
 
     // Start server
     app.listen(PORT, () => {

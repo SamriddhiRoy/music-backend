@@ -7,7 +7,19 @@ const connectDB = async () => {
     
     console.log('🔄 MongoDB URI:', MONGODB_URI);
     
-    await mongoose.connect(MONGODB_URI);
+    // Add connection options with timeouts
+    const options = {
+      serverSelectionTimeoutMS: 30000, // 30 seconds
+      socketTimeoutMS: 45000, // 45 seconds
+      connectTimeoutMS: 30000, // 30 seconds
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      maxIdleTimeMS: 30000,
+      retryWrites: true,
+      w: 'majority'
+    };
+    
+    await mongoose.connect(MONGODB_URI, options);
     console.log('✅ MongoDB Connected Successfully');
     return true;
   } catch (error) {
